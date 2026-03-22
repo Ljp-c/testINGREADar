@@ -1,0 +1,9 @@
+CompileFlags:
+  Add:
+    - -DSTM32F10X_MD
+    - -DUSE_STDPERIPH_DRIVER
+    - -D__CC_ARM
+    - -If:/stm32/project/testINGREADar/start
+    - -If:/stm32/project/testINGREADar/library
+    - -If:/stm32/project/testINGREADar/user
+    - -If:/stm32/project/testINGREADar/ysytem
