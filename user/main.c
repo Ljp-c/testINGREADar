@@ -27,14 +27,25 @@ static radar_data radarData;
 
 static uint32_t distance;
 
+typedef enum
+{
+	I2C_STATUS_OK = 0,
+	I2C_STATUS_BUSY,
+	I2C_STATUS_START_TIMEOUT,
+	I2C_STATUS_ADDR_NACK,
+	I2C_STATUS_ADDR_TIMEOUT
+} I2C_Status;
+
+#define I2C_WAIT_TIMEOUT 60000U
+
 //gpio配置
 void GPIO_INitation(void)
 {
 GPIO_InitTypeDef GPIO_InitStructure;
 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,ENABLE);			
-RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);		
+RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);		
 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 GPIO_Init(GPIOB, &GPIO_InitStructure);
 
@@ -50,65 +61,65 @@ I2C_InitStructure.I2C_OwnAddress1 = 0x00;
 I2C_InitStructure.I2C_ClockSpeed = 100000;
 I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
 I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-I2C_Init(I2C1, &I2C_InitStructure);
+I2C_Init(I2C2, &I2C_InitStructure);
 
-I2C_Cmd(I2C1, ENABLE);
+I2C_Cmd(I2C2, ENABLE);
 
 }
 
 void I2c_sendMEssage(uint8_t *slaveAddress,	uint8_t *rEGdata , uint8_t* data, uint16_t size)
 {
-while(!I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY));
+while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
 
-I2C_GenerateSTART(I2C1, ENABLE);
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
+I2C_GenerateSTART(I2C2, ENABLE);
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT));
 
-I2C_Send7bitAddress(I2C1, *slaveAddress, I2C_Direction_Transmitter);
-while(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));//I2c已经认定是主动发送模式
+I2C_Send7bitAddress(I2C2, *slaveAddress, I2C_Direction_Transmitter);
+while(!I2C_CheckEvent(I2C2,I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));//I2c已经认定是主动发送模式
 
-I2C_SendData(I2C1, *rEGdata);
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+I2C_SendData(I2C2, *rEGdata);
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
 for (uint16_t i = 0; i < size; i++)
 {
-I2C_SendData(I2C1, *(data+i));
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));	
+I2C_SendData(I2C2, *(data+i));
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));	
 }
-I2C_GenerateSTOP(I2C1, ENABLE);
+I2C_GenerateSTOP(I2C2, ENABLE);
 
 }
 
 void I2creceivemessage(uint8_t *slaveAddress, uint8_t *rEGdata, uint8_t* datarevive, uint16_t size)
 {
-while(!I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY));
+while(I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET);
 
-I2C_GenerateSTART(I2C1, ENABLE);
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
+I2C_GenerateSTART(I2C2, ENABLE);
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT));
 
-I2C_Send7bitAddress(I2C1, *slaveAddress, I2C_Direction_Transmitter);
-while(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));//I2c已经认定是主动发送模式
+I2C_Send7bitAddress(I2C2, *slaveAddress, I2C_Direction_Transmitter);
+while(!I2C_CheckEvent(I2C2,I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));//I2c已经认定是主动发送模式
 
-I2C_SendData(I2C1, *(rEGdata));
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));	
+I2C_SendData(I2C2, *(rEGdata));
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED));	
 
-I2C_GenerateSTART(I2C1, ENABLE);
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
+I2C_GenerateSTART(I2C2, ENABLE);
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT));
 
-I2C_Send7bitAddress(I2C1, *slaveAddress, I2C_Direction_Receiver);
-while(!I2C_CheckEvent(I2C1,I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));//I2c已经认定是主动接收模式
+I2C_Send7bitAddress(I2C2, *slaveAddress, I2C_Direction_Receiver);
+while(!I2C_CheckEvent(I2C2,I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));//I2c已经认定是主动接收模式
 
 for(uint16_t i = 0; i < size; i++)
 {
 if(i==size-1)
 {
-I2C_AcknowledgeConfig(I2C1, DISABLE);
+I2C_AcknowledgeConfig(I2C2, DISABLE);
 }
-while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
-*(datarevive+i) = I2C_ReceiveData(I2C1);
+while(!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED));
+*(datarevive+i) = I2C_ReceiveData(I2C2);
 }
-I2C_GenerateSTOP(I2C1, ENABLE);
+I2C_GenerateSTOP(I2C2, ENABLE);
 
-I2C_AcknowledgeConfig(I2C1, ENABLE);
+I2C_AcknowledgeConfig(I2C2, ENABLE);
 
 }
 //还可以使用I2c_registerread和I2c_registerwrite函数来简化代码
@@ -124,16 +135,98 @@ void data_process(void)
 	distance = ((uint32_t)radarData.BYte_H << 16) | ((uint32_t)radarData.BYte_M << 8) | (uint32_t)radarData.BYte_L;
 }
 
-void main(void)
+static I2C_Status I2C_CheckRadarStatus(void)
+{
+	uint32_t timeout = I2C_WAIT_TIMEOUT;
+
+	while ((I2C_GetFlagStatus(I2C2, I2C_FLAG_BUSY) == SET) && timeout--);
+	if (timeout == 0)
+	{
+		return I2C_STATUS_BUSY;
+	}
+
+	I2C_GenerateSTART(I2C2, ENABLE);
+	timeout = I2C_WAIT_TIMEOUT;
+	while ((!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_MODE_SELECT)) && timeout--);
+	if (timeout == 0)
+	{
+		I2C_GenerateSTOP(I2C2, ENABLE);
+		return I2C_STATUS_START_TIMEOUT;
+	}
+
+	I2C_Send7bitAddress(I2C2, radar_ADDRESS, I2C_Direction_Transmitter);
+	timeout = I2C_WAIT_TIMEOUT;
+	while ((!I2C_CheckEvent(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) && timeout--)
+	{
+		if (I2C_GetFlagStatus(I2C2, I2C_FLAG_AF) == SET)
+		{
+			I2C_ClearFlag(I2C2, I2C_FLAG_AF);
+			I2C_GenerateSTOP(I2C2, ENABLE);
+			return I2C_STATUS_ADDR_NACK;
+		}
+	}
+
+	if (timeout == 0)
+	{
+		I2C_GenerateSTOP(I2C2, ENABLE);
+		return I2C_STATUS_ADDR_TIMEOUT;
+	}
+
+	I2C_GenerateSTOP(I2C2, ENABLE);
+	return I2C_STATUS_OK;
+}
+
+static void OLED_ShowI2CStatus(I2C_Status status)
+{
+	OLED_ShowString(1, 1, "I2C2 RADAR:");
+
+	switch (status)
+	{
+	case I2C_STATUS_OK:
+		OLED_ShowString(1, 12, "OK   ");
+		break;
+	case I2C_STATUS_BUSY:
+		OLED_ShowString(1, 12, "BUSY ");
+		break;
+	case I2C_STATUS_START_TIMEOUT:
+		OLED_ShowString(1, 12, "STTO ");
+		break;
+	case I2C_STATUS_ADDR_NACK:
+		OLED_ShowString(1, 12, "NACK ");
+		break;
+	default:
+		OLED_ShowString(1, 12, "ATMO ");
+		break;
+	}
+
+	OLED_ShowString(4, 1, "S1:");
+	OLED_ShowHexNum(4, 4, I2C2->SR1, 4);
+	OLED_ShowString(4, 9, "S2:");
+	OLED_ShowHexNum(4, 12, I2C2->SR2, 4);
+}
+
+int main(void)
 {
 	GPIO_INitation();
-	OLED_Init();
-	OLED_ShowHexNum(1, 1, 0x12, 6);
-	//开始写I2c硬件通信	
-	while(1){
 	I2C_Initation();
-	read_radar();
-	data_process();
-	OLED_ShowHexNum(2, 1, distance, 6);
+	OLED_Init();
+	OLED_Clear();
+	//开始写I2c硬件通信
+	while(1){
+	I2C_Status status = I2C_CheckRadarStatus();
+	OLED_ShowI2CStatus(status);
+
+	if (status == I2C_STATUS_OK)
+	{
+		read_radar();
+		data_process();
+		OLED_ShowString(2, 1, "DIST:");
+		OLED_ShowHexNum(2, 6, distance, 6);
 	}
+	else
+	{
+		OLED_ShowString(2, 1, "DIST:------");
+	}
+	}
+
 }
