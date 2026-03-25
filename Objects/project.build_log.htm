@@ -34,10 +34,18 @@ user\main.c(16): warning:  #177-D: variable "radar_wREG"  was declared but never
   static uint8_t radar_wREG=0x01;
 user\main.c(25): warning:  #177-D: variable "radarData"  was declared but never referenced
   static radar_data radarData;
-user\main.c: 3 warnings, 0 errors
+user\main.c(47): warning:  #550-D: variable "radar_measure_ok"  was set but never used
+  static uint8_t radar_measure_ok;
+user\main.c(50): warning:  #550-D: variable "loopback_ok"  was set but never used
+  static uint8_t loopback_ok;
+user\main.c(51): warning:  #550-D: variable "loopback_err"  was set but never used
+  static uint8_t loopback_err;
+user\main.c(286): warning:  #177-D: function "GPIO_LoopbackTest"  was declared but never referenced
+  static uint8_t GPIO_LoopbackTest(void)
+user\main.c: 7 warnings, 0 errors
 linking...
-Program Size: Code=3882 RO-data=1790 RW-data=12 ZI-data=1636  
-".\Objects\project.axf" - 0 Error(s), 3 Warning(s).
+Program Size: Code=2952 RO-data=1788 RW-data=52 ZI-data=1636  
+".\Objects\project.axf" - 0 Error(s), 7 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -51,7 +59,7 @@ Package Vendor: Keil
   C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Device\Include
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:00
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>
